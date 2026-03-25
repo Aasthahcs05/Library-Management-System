@@ -3,6 +3,7 @@
 // ===============================
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors"); // ✅ added
 require("dotenv").config();
 
 const app = express();
@@ -10,6 +11,7 @@ const app = express();
 // ===============================
 // MIDDLEWARE
 // ===============================
+app.use(cors()); // ✅ added (fix frontend connection)
 app.use(express.json()); // Parse JSON requests
 
 
@@ -107,11 +109,18 @@ POST /books
 Add new book
 ----------------------------------
 */
-app.post("/books", async (req, res, next) => {
+app.post("/books", async (req, res) => {
 
     try {
 
-        const book = new Book(req.body);
+        const data = req.body;
+
+        // ✅ fix: auto set availableCopies
+        if (!data.availableCopies) {
+            data.availableCopies = data.totalCopies;
+        }
+
+        const book = new Book(data);
 
         const savedBook = await book.save();
 
@@ -121,7 +130,12 @@ app.post("/books", async (req, res, next) => {
         });
 
     } catch (error) {
-        next(error);
+
+        console.error("POST ERROR:", error.message); // ✅ better error
+
+        res.status(400).json({
+            message: error.message
+        });
     }
 
 });
@@ -294,7 +308,6 @@ app.use((err, req, res, next) => {
     });
 
 });
-
 
 
 // ===============================
